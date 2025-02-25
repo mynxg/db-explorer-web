@@ -680,7 +680,7 @@ export default function DatabasePage() {
                               </Button>
                             </CardHeader>
                             <CardContent className="p-0">
-                              {tab.dataColumns?.length > 0 ? (
+                              {(tab.dataColumns?.length ?? 0) > 0 ? (
                                 <>
                                   <div className="overflow-x-auto">
                                     <Table>
@@ -784,7 +784,7 @@ export default function DatabasePage() {
                           </CardContent>
                         </Card>
                         
-                        {tab.result?.columns?.length > 0 ? (
+                        {tab.dataColumns && (tab.result?.columns?.length ?? 0) > 0 ? (
                           <Card>
                             <CardHeader className="py-3">
                               <CardTitle className="text-base">查询结果</CardTitle>
