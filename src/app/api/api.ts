@@ -96,6 +96,18 @@ export interface TestConnectionResponse {
   message?: string;
 }
 
+// 添加这些接口
+export interface ColumnDefinition {
+  name: string;
+  dataType?: string;
+  type?: string;
+  [key: string]: any; // 如果有更多未知属性
+}
+
+export interface DataRow {
+  [columnName: string]: string | number | boolean | null;
+}
+
 // ==================== API客户端配置 ====================
 
 // 创建axios实例

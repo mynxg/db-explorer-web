@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Search, Database, Plus, X, Server, RefreshCw, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Database, Plus, X, RefreshCw, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,7 +18,9 @@ import {
   ConnectionInfo, 
   TableInfo, 
   TableColumn, 
-  TabData 
+  TabData,
+  ColumnDefinition,
+  DataRow
 } from '@/app/api/api';
 
 export default function DatabasePage() {
@@ -680,21 +682,21 @@ export default function DatabasePage() {
                               </Button>
                             </CardHeader>
                             <CardContent className="p-0">
-                              {(tab.dataColumns?.length ?? 0) > 0 ? (
+                              {(tab.dataColumns && (tab.result?.columns?.length ?? 0) > 0) ? (
                                 <>
                                   <div className="overflow-x-auto">
                                     <Table>
                                       <TableHeader>
                                         <TableRow>
-                                          {tab.dataColumns?.map((column: any, i: number) => (
+                                          {tab.dataColumns?.map((column: ColumnDefinition, i: number) => (
                                             <TableHead key={i}>{column.name}</TableHead>
                                           ))}
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
-                                        {tab.data?.map((row: any, i: number) => (
+                                        {tab.data?.map((row: DataRow, i: number) => (
                                           <TableRow key={i}>
-                                            {tab.dataColumns?.map((column: any, j: number) => (
+                                            {tab.dataColumns?.map((column: ColumnDefinition, j: number) => (
                                               <TableCell key={j}>
                                                 {row[column.name] !== null && row[column.name] !== undefined 
                                                   ? String(row[column.name]) 
