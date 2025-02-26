@@ -682,60 +682,31 @@ export default function DatabasePage() {
                               </Button>
                             </CardHeader>
                             <CardContent className="p-0">
-                              {(tab.dataColumns && (tab.result?.columns?.length ?? 0) > 0) ? (
-                                <>
-                                  <div className="overflow-x-auto">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          {tab.dataColumns?.map((column: ColumnDefinition, i: number) => (
-                                            <TableHead key={i}>{column.name}</TableHead>
+                              {(tab.dataColumns?.length ?? 0) > 0 ? (
+                                <div className="overflow-x-auto">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        {tab.dataColumns?.map((column: ColumnDefinition, i: number) => (
+                                          <TableHead key={i}>{column.name}</TableHead>
+                                        ))}
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {tab.data?.map((row: DataRow, i: number) => (
+                                        <TableRow key={i}>
+                                          {tab.dataColumns?.map((column: ColumnDefinition, j: number) => (
+                                            <TableCell key={j}>
+                                              {row[column.name] !== null && row[column.name] !== undefined 
+                                                ? String(row[column.name]) 
+                                                : <span className="text-muted-foreground italic">null</span>}
+                                            </TableCell>
                                           ))}
                                         </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {tab.data?.map((row: DataRow, i: number) => (
-                                          <TableRow key={i}>
-                                            {tab.dataColumns?.map((column: ColumnDefinition, j: number) => (
-                                              <TableCell key={j}>
-                                                {row[column.name] !== null && row[column.name] !== undefined 
-                                                  ? String(row[column.name]) 
-                                                  : <span className="text-muted-foreground italic">null</span>}
-                                              </TableCell>
-                                            ))}
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
-                                  
-                                  <div className="flex items-center justify-between p-4 border-t">
-                                    <div>总计 {tab.total} 条记录</div>
-                                    <div className="flex items-center space-x-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={tab.currentPage! <= 1}
-                                        onClick={() => loadTableData(tab.tableName!, tab.currentPage! - 1)}
-                                      >
-                                        <ChevronLeft className="h-4 w-4 mr-1" />
-                                        上一页
-                                      </Button>
-                                      <span className="text-sm">
-                                        第 <span className="font-medium">{tab.currentPage}</span> 页
-                                      </span>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={tab.currentPage! * tab.pageSize! >= tab.total!}
-                                        onClick={() => loadTableData(tab.tableName!, tab.currentPage! + 1)}
-                                      >
-                                        下一页
-                                        <ChevronRight className="h-4 w-4 ml-1" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
                               ) : (
                                 <div className="flex items-center justify-center py-12 text-muted-foreground">
                                   {tab.loading ? '加载中...' : '没有数据'}
