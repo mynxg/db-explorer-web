@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Search, Database, Plus, X, RefreshCw, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Database, Plus, X, RefreshCw, Play, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +22,7 @@ import {
   ColumnDefinition,
   DataRow
 } from '@/app/api/api';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function DatabasePage() {
   const [connectionInfo, setConnectionInfo] = useState<ConnectionInfo>({
@@ -41,13 +42,26 @@ export default function DatabasePage() {
   const [activeTab, setActiveTab] = useState("");
   const [tabs, setTabs] = useState<TabData[]>([]);
   const [tabIndex, setTabIndex] = useState(0);
+  const [savedConnections, setSavedConnections] = useState<ConnectionInfo[]>([]);
 
   // 在组件顶部添加 useEffect 来加载保存的连接信息
   useEffect(() => {
-    // 从 localStorage 加载连接信息
+    // 加载保存的连接信息
     const savedConnectionInfo = localStorage.getItem('connectionInfo');
     const savedConnected = localStorage.getItem('connected');
+    const savedConnectionsHistory = localStorage.getItem('connectionsHistory');
     
+    // 加载连接历史
+    if (savedConnectionsHistory) {
+      try {
+        const connections = JSON.parse(savedConnectionsHistory);
+        setSavedConnections(connections);
+      } catch (error) {
+        console.error('Failed to parse connections history:', error);
+      }
+    }
+    
+    // 加载当前连接
     if (savedConnectionInfo) {
       try {
         const parsedInfo = JSON.parse(savedConnectionInfo);
@@ -55,7 +69,6 @@ export default function DatabasePage() {
         
         // 如果之前已连接，自动重新连接
         if (savedConnected === 'true') {
-          // 使用 setTimeout 确保组件完全挂载后再连接
           setTimeout(() => {
             handleAutoConnect(parsedInfo);
           }, 500);
@@ -85,7 +98,21 @@ export default function DatabasePage() {
     }
   };
 
-  // 修改 connect 函数，在成功连接后保存连接信息
+  // 添加保存连接到历史记录的函数
+  const saveConnectionToHistory = (conn: ConnectionInfo) => {
+    // 检查是否已经存在相同的连接信息
+    const exists = savedConnections.some(
+      c => c.dbName === conn.dbName && c.ip === conn.ip && c.port === conn.port
+    );
+    
+    if (!exists) {
+      const newConnections = [conn, ...savedConnections.slice(0, 9)]; // 最多保存10个
+      setSavedConnections(newConnections);
+      localStorage.setItem('connectionsHistory', JSON.stringify(newConnections));
+    }
+  };
+
+  // 修改 connect 函数，加入保存历史记录的功能
   const connect = async () => {
     setConnecting(true);
     try {
@@ -97,6 +124,9 @@ export default function DatabasePage() {
       // 保存连接信息和连接状态到 localStorage
       localStorage.setItem('connectionInfo', JSON.stringify(connectionInfo));
       localStorage.setItem('connected', 'true');
+      
+      // 保存到连接历史
+      saveConnectionToHistory(connectionInfo);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } }, message: string };
       console.error('连接数据库失败', error);
@@ -343,6 +373,42 @@ export default function DatabasePage() {
     ? tables.filter(table => table.tableName.toLowerCase().includes(tableFilter.toLowerCase()))
     : tables;
 
+  // 添加切换连接的功能
+  const switchConnection = async (conn: ConnectionInfo) => {
+    if (connected) {
+      // 如果选择的是当前连接，不做任何操作
+      if (conn.dbName === connectionInfo.dbName && conn.ip === connectionInfo.ip && conn.port === conn.port) {
+        return;
+      }
+      
+      // 先断开当前连接
+      setConnected(false);
+      setTables([]);
+      
+      // 设置新的连接信息
+      setConnectionInfo(conn);
+      
+      // 连接到新数据库
+      setConnecting(true);
+      try {
+        const tables = await databaseService.getTables(conn);
+        setTables(tables);
+        setConnected(true);
+        
+        // 更新存储的连接信息
+        localStorage.setItem('connectionInfo', JSON.stringify(conn));
+        localStorage.setItem('connected', 'true');
+        
+        toast.success('已切换到数据库: ' + conn.dbName);
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } }, message: string };
+        toast.error('切换数据库失败: ' + (err.response?.data?.message || err.message));
+      } finally {
+        setConnecting(false);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <ToastContainer position="top-right" autoClose={3000} />
@@ -355,9 +421,35 @@ export default function DatabasePage() {
         </div>
         <div className="flex items-center space-x-2">
           {connected && (
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-              已连接: {connectionInfo.dbName}@{connectionInfo.ip}
-            </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                    已连接: {connectionInfo.dbName}@{connectionInfo.ip}
+                  </Badge>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>切换数据库</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {savedConnections.map((conn, idx) => (
+                  <DropdownMenuItem 
+                    key={idx}
+                    onClick={() => switchConnection(conn)}
+                    className={conn.dbName === connectionInfo.dbName && conn.ip === connectionInfo.ip ? "bg-accent" : ""}
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    {conn.dbName}@{conn.ip}
+                  </DropdownMenuItem>
+                ))}
+                {savedConnections.length > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuItem onClick={disconnect}>
+                  <X className="h-4 w-4 mr-2" />
+                  断开连接
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <ModeToggle />
         </div>
