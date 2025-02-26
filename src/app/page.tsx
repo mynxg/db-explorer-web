@@ -588,16 +588,19 @@ export default function DatabasePage() {
                         
                         <TabsContent value="structure" className="mt-4">
                           <Card>
-                            <CardHeader className="py-3 border-b flex flex-row items-center justify-between">
-                              <CardTitle className="text-base">表结构</CardTitle>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => loadTableStructure(tab.tableName!)}
-                              >
-                                <RefreshCw className="h-4 w-4 mr-1" />
-                                刷新
-                              </Button>
+                            <CardHeader className="py-3 border-b flex flex-row items-center">
+                              <div className="flex items-center flex-nowrap">
+                                <span className="text-base font-medium mr-1">表结构</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 text-muted-foreground hover:text-foreground flex-shrink-0" 
+                                  onClick={() => loadTableStructure(tab.tableName!)}
+                                >
+                                  <RefreshCw className="h-4 w-4" />
+                                  <span className="sr-only">刷新</span>
+                                </Button>
+                              </div>
                             </CardHeader>
                             <CardContent className="p-0">
                               {tab.loading ? (
@@ -670,16 +673,19 @@ export default function DatabasePage() {
                         
                         <TabsContent value="data" className="mt-4">
                           <Card>
-                            <CardHeader className="py-3 border-b flex flex-row items-center justify-between">
-                              <CardTitle className="text-base">表数据</CardTitle>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => loadTableData(tab.tableName!, tab.currentPage!)}
-                              >
-                                <RefreshCw className="h-4 w-4 mr-1" />
-                                刷新
-                              </Button>
+                            <CardHeader className="py-3 border-b flex flex-row items-center">
+                              <div className="flex items-center flex-nowrap">
+                                <span className="text-base font-medium mr-1">表数据</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 text-muted-foreground hover:text-foreground flex-shrink-0" 
+                                  onClick={() => loadTableData(tab.tableName!, tab.currentPage!)}
+                                >
+                                  <RefreshCw className="h-4 w-4" />
+                                  <span className="sr-only">刷新</span>
+                                </Button>
+                              </div>
                             </CardHeader>
                             <CardContent className="p-0">
                               {(tab.dataColumns?.length ?? 0) > 0 ? (
