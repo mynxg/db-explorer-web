@@ -204,10 +204,12 @@ export const databaseService = {
   // 执行SQL查询
   executeSql: async (connectionInfo: ConnectionInfo, sql: string): Promise<SqlExecutionResult> => {
     try {
-      const response = await apiClient.post('/database/execute-sql', {
-        ...connectionInfo,
-        sql
-      });
+      // 将sql作为URL查询参数，将connectionInfo作为请求体
+      const response = await apiClient.post(
+        `/database/execute?sql=${encodeURIComponent(sql)}`,
+        connectionInfo
+      );
+   
       return response.data;
     } catch (error) {
       console.error('Execute SQL failed:', error);

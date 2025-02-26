@@ -407,8 +407,9 @@ export default function DatabasePage() {
     setTabs(updatedTabs);
     
     try {
+
       const result = await databaseService.executeSql(connectionInfo, tab.sql);
-      
+ 
       const newUpdatedTabs = [...tabs];
       const newTabIndex = newUpdatedTabs.findIndex(t => t.name === tab.name);
       if (newTabIndex !== -1) {
