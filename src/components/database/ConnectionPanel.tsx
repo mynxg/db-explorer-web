@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { databaseService, ConnectionInfo } from '@/app/api/api';
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, EyeOff, Eye } from "lucide-react";
 
 interface ConnectionPanelProps {
   connectionInfo: ConnectionInfo;
   onConnectionInfoChange: (field: string, value: any) => void;
-  onConnect: () => Promise<void>;
+  onConnect: (rememberConnection: boolean) => void;
   onDisconnect: () => void;
   connecting: boolean;
   connected: boolean;
@@ -28,6 +31,8 @@ export function ConnectionPanel({
   onSwitchConnection
 }: ConnectionPanelProps) {
   const [testingConnection, setTestingConnection] = useState(false);
+  const [rememberConnection, setRememberConnection] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   const testConnection = async () => {
     setTestingConnection(true);
@@ -47,20 +52,25 @@ export function ConnectionPanel({
     }
   };
 
+  const handleConnect = () => {
+    onConnect(rememberConnection);
+  };
+
   return (
-    <Card>
-      <CardHeader className="py-4">
+    <Card className="max-w-full">
+      <CardHeader className="py-1">
         <CardTitle className="text-lg">数据库连接</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm mb-1 text-muted-foreground">数据库类型</label>
-            <Select
-              value={connectionInfo.dbType}
+      <CardContent className="p-3">
+        <div className="space-y-2 max-w-full">
+          <div className="space-y-1">
+            <Label htmlFor="dbType">数据库类型</Label>
+            <Select 
+              value={connectionInfo.dbType} 
               onValueChange={(value) => onConnectionInfoChange('dbType', value)}
+              disabled={connecting}
             >
-              <SelectTrigger>
+              <SelectTrigger id="dbType">
                 <SelectValue placeholder="选择数据库类型" />
               </SelectTrigger>
               <SelectContent>
@@ -72,75 +82,119 @@ export function ConnectionPanel({
             </Select>
           </div>
           
-          <div>
-            <label className="block text-sm mb-1 text-muted-foreground">主机地址</label>
+          <div className="space-y-1">
+            <Label htmlFor="hostname">主机地址</Label>
             <Input 
+              id="hostname"
               value={connectionInfo.ip} 
               onChange={(e) => onConnectionInfoChange('ip', e.target.value)}
               placeholder="例如: localhost" 
+              disabled={connecting}
             />
           </div>
           
-          <div>
-            <label className="block text-sm mb-1 text-muted-foreground">端口</label>
+          <div className="space-y-1">
+            <Label htmlFor="port">端口</Label>
             <Input 
+              id="port"
               type="number" 
               value={connectionInfo.port.toString()} 
               onChange={(e) => onConnectionInfoChange('port', e.target.value)}
               placeholder="例如: 3306" 
+              disabled={connecting}
             />
           </div>
           
-          <div>
-            <label className="block text-sm mb-1 text-muted-foreground">用户名</label>
+          <div className="space-y-1">
+            <Label htmlFor="username">用户名</Label>
             <Input 
+              id="username"
               value={connectionInfo.username} 
               onChange={(e) => onConnectionInfoChange('username', e.target.value)}
               placeholder="例如: root" 
+              disabled={connecting}
             />
           </div>
           
-          <div>
-            <label className="block text-sm mb-1 text-muted-foreground">密码</label>
-            <Input 
-              type="password" 
-              value={connectionInfo.password} 
-              onChange={(e) => onConnectionInfoChange('password', e.target.value)}
-              placeholder="输入密码" 
-            />
+          <div className="space-y-1">
+            <Label htmlFor="password">密码</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={connectionInfo.password}
+                onChange={(e) => onConnectionInfoChange('password', e.target.value)}
+                disabled={connecting}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm mb-1 text-muted-foreground">数据库名</label>
+          <div className="space-y-1">
+            <Label htmlFor="dbname">数据库名</Label>
             <Input 
+              id="dbname"
               value={connectionInfo.dbName} 
               onChange={(e) => onConnectionInfoChange('dbName', e.target.value)}
               placeholder="例如: mysql" 
+              disabled={connecting}
             />
           </div>
           
-          <div className="flex space-x-2 mt-4">
+          {/* <div className="flex items-center space-x-2 pb-1">
+            <Checkbox 
+              id="rememberConnection" 
+              checked={rememberConnection}
+              onCheckedChange={(checked) => setRememberConnection(!!checked)}
+              disabled={connecting}
+            />
+            <Label 
+              htmlFor="rememberConnection" 
+              className="text-lm cursor-pointer truncate"
+            >
+              记住我的连接信息 (7天)
+            </Label>
+          </div> */}
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button 
               onClick={testConnection} 
               variant="outline" 
-              disabled={testingConnection}
+              disabled={testingConnection || connecting}
+              size="sm"
+              className="w-full"
             >
               {testingConnection ? '测试中...' : '测试连接'}
             </Button>
             
             {!connected ? (
               <Button 
-                onClick={onConnect} 
+                onClick={handleConnect} 
                 disabled={connecting}
+                size="sm"
+                className="w-full"
               >
-                {connecting ? '连接中...' : '连接'}
+                {connecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span className="truncate">连接中...</span>
+                  </>
+                ) : <span className="truncate">连接</span>}
               </Button>
             ) : (
               <Button 
                 onClick={onDisconnect} 
-                variant="destructive"
+                variant="outline" 
+                size="sm"
+                className="w-full"
               >
-                断开连接
+                <span className="truncate">断开连接</span>
               </Button>
             )}
           </div>

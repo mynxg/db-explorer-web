@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Database, ChevronDown } from "lucide-react";
+import { Database, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { databaseService, ConnectionInfo, TableInfo, TabData } from '@/app/api/api';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { ConnectionPanel } from "@/components/database/ConnectionPanel";
 import { TableList } from "@/components/database/TableList";
 import { TabManager } from "@/components/database/TabManager";
+import { securityService } from '@/app/services/securityService';
 
 export default function DatabasePage() {
   const [connectionInfo, setConnectionInfo] = useState<ConnectionInfo>({
@@ -30,37 +31,30 @@ export default function DatabasePage() {
   const [tabs, setTabs] = useState<TabData[]>([]);
   const [tabIndex, setTabIndex] = useState(0);
   const [savedConnections, setSavedConnections] = useState<ConnectionInfo[]>([]);
+  const [securityLocked, setSecurityLocked] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // 加载保存的连接信息
   useEffect(() => {
-    const savedConnectionInfo = localStorage.getItem('connectionInfo');
-    const savedConnected = localStorage.getItem('connected');
-    const savedConnectionsHistory = localStorage.getItem('connectionsHistory');
+    // 使用安全服务获取存储的连接信息
+    const savedConnectionInfo = securityService.getWithExpiry('connectionInfo');
+    const savedConnected = localStorage.getItem('connected') === 'true';
+    const savedConnectionsHistory = securityService.getWithExpiry('connectionsHistory');
     
     // 加载连接历史
     if (savedConnectionsHistory) {
-      try {
-        const connections = JSON.parse(savedConnectionsHistory);
-        setSavedConnections(connections);
-      } catch (error) {
-        console.error('Failed to parse connections history:', error);
-      }
+      setSavedConnections(savedConnectionsHistory);
     }
     
     // 加载当前连接
     if (savedConnectionInfo) {
-      try {
-        const parsedInfo = JSON.parse(savedConnectionInfo);
-        setConnectionInfo(parsedInfo);
-        
-        // 如果之前已连接，自动重新连接
-        if (savedConnected === 'true') {
-          setTimeout(() => {
-            handleAutoConnect(parsedInfo);
-          }, 500);
-        }
-      } catch (error) {
-        console.error('Failed to parse saved connection info:', error);
+      setConnectionInfo(savedConnectionInfo);
+      
+      // 如果之前已连接，自动重新连接
+      if (savedConnected) {
+        setTimeout(() => {
+          handleAutoConnect(savedConnectionInfo);
+        }, 500);
       }
     }
   }, []);
@@ -91,12 +85,14 @@ export default function DatabasePage() {
     if (!exists) {
       const newConnections = [conn, ...savedConnections.slice(0, 9)]; // 最多保存10个
       setSavedConnections(newConnections);
-      localStorage.setItem('connectionsHistory', JSON.stringify(newConnections));
+      
+      // 使用安全服务加密存储连接历史
+      securityService.storeWithExpiry('connectionsHistory', newConnections, 30); // 30天过期
     }
   };
 
   // 连接到数据库
-  const connect = async () => {
+  const connect = async (rememberConnection = true) => {
     setConnecting(true);
     try {
       const tables = await databaseService.getTables(connectionInfo);
@@ -104,10 +100,18 @@ export default function DatabasePage() {
       setConnected(true);
       toast.success('已连接到数据库，获取到 ' + tables.length + ' 个表');
       
-      localStorage.setItem('connectionInfo', JSON.stringify(connectionInfo));
-      localStorage.setItem('connected', 'true');
-      
-      saveConnectionToHistory(connectionInfo);
+      // 根据"记住我"选项决定是否保存连接信息
+      if (rememberConnection) {
+        // 使用安全服务加密存储连接信息
+        securityService.storeWithExpiry('connectionInfo', connectionInfo, 7); // 7天过期
+        localStorage.setItem('connected', 'true');
+        
+        // 保存到连接历史
+        saveConnectionToHistory(connectionInfo);
+      } else {
+        // 仅保存会话期间
+        sessionStorage.setItem('tempConnectionInfo', JSON.stringify(connectionInfo));
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } }, message: string };
       console.error('连接数据库失败', error);
@@ -127,6 +131,8 @@ export default function DatabasePage() {
     setActiveTab('');
     
     localStorage.removeItem('connected');
+    // 可选: 清除会话存储
+    sessionStorage.removeItem('tempConnectionInfo');
     
     toast.info('已断开数据库连接');
   };
@@ -533,6 +539,53 @@ export default function DatabasePage() {
     setActiveTab('');
   };
 
+  // 设置不活动计时器
+  useEffect(() => {
+    let inactivityTimer: NodeJS.Timeout;
+    
+    // 只在已连接时激活锁定功能
+    if (connected) {
+      // 设置30分钟不活动后自动锁定
+      const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30分钟
+      
+      const resetTimer = () => {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+          setSecurityLocked(true);
+          toast.info('因长时间不活动，连接已被锁定，请重新输入密码');
+        }, INACTIVITY_TIMEOUT);
+      };
+      
+      // 设置初始计时器
+      resetTimer();
+      
+      // 添加用户活动监听器
+      const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+      activityEvents.forEach(event => {
+        window.addEventListener(event, resetTimer);
+      });
+      
+      // 清理函数
+      return () => {
+        clearTimeout(inactivityTimer);
+        activityEvents.forEach(event => {
+          window.removeEventListener(event, resetTimer);
+        });
+      };
+    }
+  }, [connected]);
+
+  // 创建一个解锁函数
+  const unlockConnection = (password: string) => {
+    // 验证密码是否与存储的密码匹配
+    if (password === connectionInfo.password) {
+      setSecurityLocked(false);
+      toast.success('连接已解锁');
+    } else {
+      toast.error('密码不正确');
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <ToastContainer position="top-right" autoClose={3000} />
@@ -580,11 +633,11 @@ export default function DatabasePage() {
       </header>
       
       {/* 主内容区 */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* 左侧边栏 */}
-        <div className="w-64 border-r border-border flex flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* 左侧边栏 - 调整为响应式宽度 */}
+        <div className={`${sidebarCollapsed ? 'w-0' : 'w-56 sm:w-64'} transition-all duration-300 border-r border-border flex flex-col overflow-hidden relative`}>
           {!connected ? (
-            <div className="p-4">
+            <div className="p-3 overflow-hidden">
               <ConnectionPanel 
                 connectionInfo={connectionInfo}
                 onConnectionInfoChange={handleConnectionChange}
@@ -605,7 +658,7 @@ export default function DatabasePage() {
         </div>
         
         {/* 右侧内容区 */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {connected ? (
             <TabManager 
               tabs={tabs}
@@ -629,6 +682,16 @@ export default function DatabasePage() {
             </div>
           )}
         </div>
+        
+        {/* 独立的折叠按钮 - 不包含在侧边栏内部 */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`absolute ${sidebarCollapsed ? 'left-0' : 'left-[calc(255px-12px)]'} sm:${sidebarCollapsed ? 'left-0' : 'left-[calc(256px-12px)]'} top-1/2 -translate-y-1/2 z-20 bg-background border border-border rounded-full h-6 w-6 p-1 shadow-sm transition-all duration-300`}
+        >
+          {sidebarCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        </Button>
       </div>
     </div>
   );
