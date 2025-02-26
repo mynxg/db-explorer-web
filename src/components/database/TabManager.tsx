@@ -1,9 +1,10 @@
-import { Plus, X, Database } from "lucide-react";
+import { Plus, X, Database, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { TabData } from '@/app/api/api';
 import { TableView } from "./TableView";
 import { SqlEditor } from "./SqlEditor";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TabManagerProps {
   tabs: TabData[];
@@ -15,6 +16,7 @@ interface TabManagerProps {
   onLoadTableStructure: (tableName: string) => void;
   onLoadTableData: (tableName: string, page: number) => void;
   onExecuteSql: (tab: TabData) => void;
+  onCloseAllTabs?: () => void;
 }
 
 export function TabManager({
@@ -26,64 +28,92 @@ export function TabManager({
   onTabUpdate,
   onLoadTableStructure,
   onLoadTableData,
-  onExecuteSql
+  onExecuteSql,
+  onCloseAllTabs
 }: TabManagerProps) {
-
-  const handleTabUpdate = (tabName: string) => (updatedTab: Partial<TabData>) => {
-    onTabUpdate(tabName, updatedTab);
+  
+  const handleTabUpdate = (tabName: string) => {
+    return (updatedTab: Partial<TabData>) => {
+      onTabUpdate(tabName, updatedTab);
+    };
   };
-
+  
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="border-b border-border p-2">
-        <div className="flex items-center">
-          {tabs.length > 0 ? (
-            <>
-              <Tabs
-                value={activeTab}
-                onValueChange={onActiveTabChange}
-                className="flex-1"
+    <div className="h-full flex flex-col">
+      {/* 标签头部区域 - 采用固定高度并添加水平滚动 */}
+      <div className="border-b border-border flex items-center h-12">
+        {/* 标签滚动区域 */}
+        <div className="flex-1 overflow-x-auto scrollbar-hide">
+          <div className="flex min-w-max">
+            {tabs.map(tab => (
+              <div 
+                key={tab.name}
+                className={`flex items-center px-4 h-12 border-r border-border whitespace-nowrap cursor-pointer ${
+                  activeTab === tab.name ? 'bg-background border-b-2 border-b-primary text-primary' : 'text-muted-foreground hover:bg-accent'
+                }`}
+                onClick={() => onActiveTabChange(tab.name)}
               >
-                <TabsList className="h-9 bg-background border border-input rounded-md p-1 justify-start">
-                  {tabs.map((tab) => (
-                    <TabsTrigger
-                      key={tab.name}
-                      value={tab.name}
-                      className="relative px-3 py-1.5 text-sm font-medium border-r border-input last:border-r-0 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground rounded-none first:rounded-l-sm last:rounded-r-sm"
-                    >
-                      <span className="mr-6">{tab.title}</span>
-                      <button
-                        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 rounded-full hover:bg-muted p-0.5"
-                        onClick={(e) => onTabClose(tab.name, e)}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </>
-          ) : (
-            <div className="flex-1 text-sm text-muted-foreground">
-              没有打开的标签页
-            </div>
+                <span className="mr-2">{tab.title}</span>
+                <button
+                  onClick={(e) => onTabClose(tab.name, e)}
+                  className="rounded-full p-0.5 hover:bg-accent-foreground/10"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* 右侧固定按钮区域 */}
+        <div className="flex-shrink-0 border-l border-border flex">
+          {/* 关闭所有标签按钮 - 仅当有标签时显示 */}
+          {tabs.length > 0 && onCloseAllTabs && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="px-3 h-12 rounded-none text-muted-foreground hover:text-destructive"
+                    onClick={onCloseAllTabs}
+                  >
+                    <XCircle className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>关闭所有标签</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onCreateSqlTab}
-            className="ml-2 h-9"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            新建查询
-          </Button>
+          {/* 新建查询按钮 */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="px-3 h-12 rounded-none"
+                  onClick={onCreateSqlTab}
+                >
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>新建SQL查询</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
       
+      {/* 标签内容区域 */}
       <div className="flex-1 overflow-auto p-4">
-        {tabs.map((tab) => (
-          <div key={tab.name} className={activeTab === tab.name ? 'block h-full' : 'hidden'}>
+        {tabs.map(tab => (
+          <div 
+            key={tab.name}
+            className={`h-full ${activeTab === tab.name ? 'block' : 'hidden'}`}
+          >
             {tab.type === 'table' && (
               <TableView 
                 tab={tab}

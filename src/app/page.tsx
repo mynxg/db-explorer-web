@@ -364,16 +364,30 @@ export default function DatabasePage() {
 
   // 创建新的SQL查询标签页
   const createSqlTab = () => {
+    // 限制最大标签数为10
+    const MAX_TABS = 10;
+    let newTabs = [...tabs];
+    
+    if (newTabs.length >= MAX_TABS) {
+      const oldestTableTab = newTabs.findIndex(tab => tab.type === 'table');
+      if (oldestTableTab !== -1) {
+        newTabs.splice(oldestTableTab, 1);
+      } else {
+        newTabs.shift();
+      }
+      toast.info('已达到标签页上限，自动关闭最早打开的标签页');
+    }
+    
     const tabName = `tab-${tabIndex}`;
     const newTab: TabData = {
-      title: 'SQL查询',
+      title: `SQL查询-${tabIndex}`,
       name: tabName,
       type: 'sql',
       sql: '',
       executing: false
     };
     
-    setTabs([...tabs, newTab]);
+    setTabs([...newTabs, newTab]);
     setActiveTab(tabName);
     setTabIndex(tabIndex + 1);
   };
@@ -434,6 +448,23 @@ export default function DatabasePage() {
       return;
     }
     
+    // 限制最大标签数为10
+    const MAX_TABS = 10;
+    let newTabs = [...tabs];
+    
+    // 如果超过最大标签数，关闭最早打开的标签
+    if (newTabs.length >= MAX_TABS) {
+      // 移除最早的标签（注意保留SQL标签）
+      const oldestTableTab = newTabs.findIndex(tab => tab.type === 'table');
+      if (oldestTableTab !== -1) {
+        newTabs.splice(oldestTableTab, 1);
+      } else {
+        // 如果没有table类型的标签，移除最早的SQL标签
+        newTabs.shift();
+      }
+      toast.info('已达到标签页上限，自动关闭最早打开的标签页');
+    }
+    
     // 创建新标签页
     const tabName = `tab-${tabIndex}`;
     const newTab: TabData = {
@@ -451,7 +482,7 @@ export default function DatabasePage() {
       loading: false
     };
     
-    setTabs([...tabs, newTab]);
+    setTabs([...newTabs, newTab]);
     setActiveTab(tabName);
     setTabIndex(tabIndex + 1);
     
@@ -493,6 +524,12 @@ export default function DatabasePage() {
         setConnecting(false);
       }
     }
+  };
+
+  // 在DatabasePage组件中添加关闭所有标签的函数
+  const closeAllTabs = () => {
+    setTabs([]);
+    setActiveTab('');
   };
 
   return (
@@ -579,6 +616,7 @@ export default function DatabasePage() {
               onLoadTableStructure={loadTableStructure}
               onLoadTableData={loadTableData}
               onExecuteSql={executeSql}
+              onCloseAllTabs={closeAllTabs}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center">
