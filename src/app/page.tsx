@@ -594,7 +594,7 @@ export default function DatabasePage() {
       <header className="border-b border-border h-14 px-4 flex items-center justify-between sticky top-0 z-10 bg-background">
         <div className="flex items-center space-x-4">
           <Database className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-semibold">数据库查询工具</h1>
+          <h1 className="text-xl font-semibold">数据库探索平台</h1>
         </div>
         <div className="flex items-center space-x-2">
           {connected && (
