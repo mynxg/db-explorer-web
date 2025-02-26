@@ -13,8 +13,9 @@
 
 一个现代化的数据库查询工具，使用 Next.js 和 React 构建，支持多种数据库类型的连接、查询和数据管理。
 
+![image-20250226203426308](./asset/image-20250226203426308.png)
 
-![数据库查询工具截图](screenshot.png)
+![image-20250226203548713](./asset/image-20250226203548713.png)
 
 
 ## 功能特点
@@ -159,5 +160,4 @@ VIDEO_APP_API_URL：设置为你的 API 地址，例如 https://your-api-url.com
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=mynxg/db-explorer-web&type=Date)](https://star-history.com/#mynxg/db-explorer-web&Date)
-
 

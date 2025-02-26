@@ -10,7 +10,9 @@
 
 The Database Query Tool is a web application designed to facilitate database management and querying. It allows users to connect to various databases, execute SQL queries, and view results in a user-friendly interface.
 
-![Database Query Tool Screenshot](screenshot.png)
+![image-20250226203426308](./asset/image-20250226203426308.png)
+
+![image-20250226203548713](./asset/image-20250226203548713.png)
 
 
 
