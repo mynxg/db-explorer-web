@@ -1,17 +1,15 @@
-"use client";
-
 import { useState } from "react";
 import { Search, Database } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TableInfo } from "./DatabaseQueryTool";
+import { TableInfo } from '@/app/api/api';
 
 interface TableListProps {
   tables: TableInfo[];
-  tableClick: (table: TableInfo) => void;
+  onTableClick: (table: TableInfo) => void;
 }
 
-export function TableList({ tables, tableClick }: TableListProps) {
+export function TableList({ tables, onTableClick }: TableListProps) {
   const [tableFilter, setTableFilter] = useState("");
   
   // 过滤表格
@@ -20,7 +18,7 @@ export function TableList({ tables, tableClick }: TableListProps) {
     : tables;
 
   return (
-    <div className="flex flex-col h-full">
+    <>
       <div className="p-4 border-b border-border">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -41,7 +39,7 @@ export function TableList({ tables, tableClick }: TableListProps) {
               {filteredTables.map((table) => (
                 <li key={table.tableName}>
                   <button
-                    onClick={() => tableClick(table)}
+                    onClick={() => onTableClick(table)}
                     className="w-full text-left px-3 py-2 rounded-md hover:bg-accent flex items-center text-sm"
                   >
                     <Database className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -57,6 +55,6 @@ export function TableList({ tables, tableClick }: TableListProps) {
           )}
         </div>
       </ScrollArea>
-    </div>
+    </>
   );
 } 
