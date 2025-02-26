@@ -284,12 +284,15 @@ export default function DatabasePage() {
     }
   };
 
-  const loadTableData = async (tableName: string, page: number, targetSubTab?: string) => {
+  const loadTableData = async (tableName: string, page: number, targetSubTab?: string, newPageSize?: number) => {
     const tabIndex = tabs.findIndex(tab => tab.type === 'table' && tab.tableName === tableName);
     if (tabIndex === -1) return;
     
     // 获取当前的活动子选项卡，如果提供了目标选项卡则使用它
     const currentActiveSubTab = targetSubTab || tabs[tabIndex].activeSubTab;
+    
+    // 使用新提供的页面大小或当前标签的页面大小
+    const effectivePageSize = newPageSize || tabs[tabIndex].pageSize || 50;
     
     // 更新标签页为加载状态，但保留当前的activeSubTab
     setTabs(prevTabs => {
@@ -301,6 +304,7 @@ export default function DatabasePage() {
           ...newTabs[currIndex],
           loading: true,
           currentPage: page,
+          pageSize: effectivePageSize, // 更新pageSize
           activeSubTab: currentActiveSubTab // 确保活动子选项卡不变
         };
       }
@@ -313,7 +317,7 @@ export default function DatabasePage() {
         connectionInfo, 
         tableName, 
         page, 
-        tabs[tabIndex].pageSize || 50
+        effectivePageSize // 使用effectivePageSize而不是tabs[tabIndex].pageSize
       );
       
       // 更新完成后的状态，同样保留activeSubTab
