@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { DatabaseType } from '@/types/database';
 
 // 从环境变量获取基础URL配置
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8076/api';
@@ -7,7 +8,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8
 
 // 数据库连接信息
 export interface ConnectionInfo {
-  dbType: string;
+  dbType: DatabaseType;
   ip: string;
   port: number;
   username: string;

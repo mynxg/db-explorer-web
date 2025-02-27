@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { databaseService, ConnectionInfo } from '@/app/api/api';
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, EyeOff, Eye } from "lucide-react";
+import { DatabaseType, DATABASE_CONFIG } from '@/types/database';
 
 interface ConnectionPanelProps {
   connectionInfo: ConnectionInfo;
@@ -33,6 +34,11 @@ export function ConnectionPanel({
   const [testingConnection, setTestingConnection] = useState(false);
   const [rememberConnection, setRememberConnection] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedDbType, setSelectedDbType] = useState(connectionInfo.dbType);
+
+  useEffect(() => {
+    setSelectedDbType(connectionInfo.dbType);
+  }, [connectionInfo.dbType]);
 
   const testConnection = async () => {
     setTestingConnection(true);
@@ -56,6 +62,12 @@ export function ConnectionPanel({
     onConnect(rememberConnection);
   };
 
+  const handleDbTypeChange = (value: string) => {
+    setSelectedDbType(value as DatabaseType);
+    onConnectionInfoChange('dbType', value);
+    onConnectionInfoChange('port', DATABASE_CONFIG[value as DatabaseType].defaultPort);
+  };
+
   return (
     <Card className="max-w-full">
       <CardHeader className="py-1">
@@ -66,44 +78,52 @@ export function ConnectionPanel({
           <div className="space-y-1">
             <Label htmlFor="dbType">数据库类型</Label>
             <Select 
-              value={connectionInfo.dbType} 
-              onValueChange={(value) => onConnectionInfoChange('dbType', value)}
+              value={selectedDbType} 
+              onValueChange={handleDbTypeChange}
               disabled={connecting}
             >
               <SelectTrigger id="dbType">
-                <SelectValue placeholder="选择数据库类型" />
+                <SelectValue>
+                  {DATABASE_CONFIG[selectedDbType as DatabaseType]?.label || '选择数据库类型'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MYSQL">MySQL</SelectItem>
-                <SelectItem value="POSTGRESQL">PostgreSQL</SelectItem>
-                <SelectItem value="ORACLE">Oracle</SelectItem>
-                <SelectItem value="SQLSERVER">SQL Server</SelectItem>
+                {Object.entries(DATABASE_CONFIG).map(([type, config]) => (
+                  <SelectItem key={type} value={type}>
+                    {config.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           
-          <div className="space-y-1">
-            <Label htmlFor="hostname">主机地址</Label>
-            <Input 
-              id="hostname"
-              value={connectionInfo.ip} 
-              onChange={(e) => onConnectionInfoChange('ip', e.target.value)}
-              placeholder="例如: localhost" 
-              disabled={connecting}
-            />
-          </div>
-          
-          <div className="space-y-1">
-            <Label htmlFor="port">端口</Label>
-            <Input 
-              id="port"
-              type="number" 
-              value={connectionInfo.port.toString()} 
-              onChange={(e) => onConnectionInfoChange('port', e.target.value)}
-              placeholder="例如: 3306" 
-              disabled={connecting}
-            />
-          </div>
+          {/* SQLite 不需要显示主机地址和端口 */}
+          {connectionInfo.dbType !== DatabaseType.SQLITE && (
+            <>
+              <div className="space-y-1">
+                <Label htmlFor="hostname">主机地址</Label>
+                <Input 
+                  id="hostname"
+                  value={connectionInfo.ip} 
+                  onChange={(e) => onConnectionInfoChange('ip', e.target.value)}
+                  placeholder="例如: localhost" 
+                  disabled={connecting}
+                />
+              </div>
+              
+              <div className="space-y-1">
+                <Label htmlFor="port">端口</Label>
+                <Input 
+                  id="port"
+                  type="number" 
+                  value={connectionInfo.port.toString()} 
+                  onChange={(e) => onConnectionInfoChange('port', e.target.value)}
+                  placeholder={`默认: ${DATABASE_CONFIG[connectionInfo.dbType as DatabaseType].defaultPort}`}
+                  disabled={connecting}
+                />
+              </div>
+            </>
+          )}
           
           <div className="space-y-1">
             <Label htmlFor="username">用户名</Label>

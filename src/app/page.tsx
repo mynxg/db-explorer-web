@@ -5,6 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Database, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { databaseService, ConnectionInfo, TableInfo, TabData } from '@/app/api/api';
+import { DatabaseType } from '@/types/database';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -16,7 +17,7 @@ import { securityService } from '@/app/services/securityService';
 
 export default function DatabasePage() {
   const [connectionInfo, setConnectionInfo] = useState<ConnectionInfo>({
-    dbType: "MYSQL",
+    dbType: DatabaseType.MYSQL,
     ip: "localhost",
     port: 3306,
     username: "root",
