@@ -71,6 +71,7 @@ npm run dev
 - 访问项目
 >打开浏览器访问：[http://localhost:3000](http://localhost:3000)
 
+![](./asset/screenshots.gif)
 
 ## 使用指南
 

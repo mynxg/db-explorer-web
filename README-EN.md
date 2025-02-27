@@ -44,8 +44,8 @@ The Database Query Tool is a web application designed to facilitate database man
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/database-query-tool.git
-cd database-query-tool
+git clone https://github.com/mynxg/db-explorer-web.git
+cd db-explorer-web
 ```
 
 2. Install dependencies
@@ -71,7 +71,7 @@ pnpm dev
 
 4. Open your browser and visit [http://localhost:3000](http://localhost:3000)
 
-
+![](./asset/screenshots.gif)
 
 ## Usage Guide
 
